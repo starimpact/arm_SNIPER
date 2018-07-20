@@ -7,7 +7,7 @@
 MXNET_VERSION: "mxnet"
 output_path: "./output/sniper_arm_deepv"
 symbol: deepv_arm_net
-gpus: '0'
+gpus: '0,1,2,3'
 CLASS_AGNOSTIC: true
 default:
   kvstore: device
@@ -93,7 +93,7 @@ TRAIN:
   # whether use OHEM
   ENABLE_OHEM: true
   # size of images for each device, 2 for rcnn, 1 for rpn and e2e
-  BATCH_IMAGES: 16
+  BATCH_IMAGES: 64
   # e2e changes behavior of anchor loader and metric
   END2END: true
   # R-CNN

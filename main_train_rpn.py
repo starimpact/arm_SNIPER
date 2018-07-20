@@ -83,7 +83,7 @@ if __name__ == '__main__':
     # get list of fixed parameters
     print('Initializing the model...')
     sym_inst = eval('{}.{}'.format(config.symbol, config.symbol))(n_proposals=400, momentum=args.momentum)
-    sym = sym_inst.get_symbol_rpn_ugly(config)
+    sym = sym_inst.get_symbol_rpn(config)
 
     fixed_param_names = get_fixed_param_names(config.network.FIXED_PARAMS, sym)
     print 'fixed_param_names:', fixed_param_names
@@ -123,7 +123,7 @@ if __name__ == '__main__':
     prefix = os.path.join(output_path, args.save_prefix)
     batch_end_callback = mx.callback.Speedometer(batch_size, args.display)
     epoch_end_callback = [mx.callback.module_checkpoint(mod, prefix, period=1, save_optimizer_states=True),
-                          eval('{}.checkpoint_callback'.format(config.symbol))(sym_inst.get_bbox_param_names(), prefix, bbox_means, bbox_stds)]
+                          eval('{}.checkpoint_callback'.format(config.symbol))(prefix, bbox_means, bbox_stds)]
 
     train_iter = PrefetchingIter(train_iter)
     mod.fit(train_iter, optimizer='sgd', optimizer_params=optimizer_params,

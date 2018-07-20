@@ -19,8 +19,10 @@ class MNIteratorE2E(MNIteratorBase):
         self.num_classes = roidb[0]['gt_overlaps'].shape[1]
         self.bbox_means = np.tile(np.array(config.TRAIN.BBOX_MEANS), (self.num_classes, 1))
         self.bbox_stds = np.tile(np.array(config.TRAIN.BBOX_STDS), (self.num_classes, 1))
-        self.data_name = ['data', 'valid_ranges', 'im_info']
-        self.label_name = ['label', 'bbox_target', 'bbox_weight', 'gt_boxes']
+        #self.data_name = ['data', 'valid_ranges', 'im_info']
+        self.data_name = ['data', 'im_info']
+        #self.label_name = ['label', 'bbox_target', 'bbox_weight', 'gt_boxes']
+        self.label_name = ['label', 'bbox_target', 'bbox_weight']
         if config.TRAIN.WITH_MASK:
             self.label_name.append('gt_masks')
         self.pool = Pool(config.TRAIN.NUM_PROCESS)
@@ -197,8 +199,10 @@ class MNIteratorE2E(MNIteratorBase):
         for i in range(len(processed_list)):
             im_tensor[i] = processed_list[i]
 
-        self.data = [im_tensor, mx.nd.array(srange), mx.nd.array(chipinfo)]
-        self.label = [labels, bbox_targets, bbox_weights, gt_boxes]
+        #self.data = [im_tensor, mx.nd.array(srange), mx.nd.array(chipinfo)]
+        self.data = [im_tensor]
+        #self.label = [labels, bbox_targets, bbox_weights, gt_boxes]
+        self.label = [labels, bbox_targets, bbox_weights]
         if self.cfg.TRAIN.WITH_MASK:
             self.label.append(mx.nd.array(encoded_masks))
         #self.visualize(im_tensor, gt_boxes)

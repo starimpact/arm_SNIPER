@@ -40,16 +40,9 @@ DEEPV_ARM_NET_CONFIG = {
     ]
 }
 
-def checkpoint_callback(bbox_param_names, prefix, means, stds):
+def checkpoint_callback(prefix, means, stds):
     def _callback(iter_no, sym, arg, aux):
-        weight = arg[bbox_param_names[0]]
-        bias = arg[bbox_param_names[1]]
-        stds = np.array([0.1, 0.1, 0.2, 0.2])
-        arg[bbox_param_names[0] + '_test'] = (weight.T * mx.nd.array(stds)).T
-        arg[bbox_param_names[1] + '_test'] = bias * mx.nd.array(stds)
         mx.model.save_checkpoint(prefix, iter_no + 1, sym, arg, aux)
-        arg.pop(bbox_param_names[0] + '_test')
-        arg.pop(bbox_param_names[1] + '_test')
 
     return _callback
 
@@ -57,9 +50,6 @@ class deepv_arm_net(Symbol):
     def __init__(self, n_proposals=400, momentum=0.95, fix_bn=False, test_nbatch=1):
         self.config = DEEPV_ARM_NET_CONFIG
         self.test_nbatch = test_nbatch
-
-    def get_bbox_param_names(self):
-        return ['bbox_pred_weight', 'bbox_pred_bias']
 
     def conv_block(self, data, name, conv_type, num_filter=32, pad=0, kernel=3, stride=1, group=1):
         conv = mx.symbol.Convolution(data=data, num_filter=num_filter, pad=(pad, pad), kernel=(kernel, kernel), 
@@ -107,7 +97,6 @@ class deepv_arm_net(Symbol):
             rpn_label = mx.sym.Variable(name='label')
             rpn_bbox_target = mx.sym.Variable(name='bbox_target')
             rpn_bbox_weight = mx.sym.Variable(name='bbox_weight')
-            im_info = mx.sym.Variable(name='im_info')
         else:
             data = mx.sym.Variable(name="data")
             im_info = mx.sym.Variable(name='im_info')

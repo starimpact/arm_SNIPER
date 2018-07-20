@@ -85,7 +85,7 @@ def main():
     # Initialize the weights
     print output_path, args.save_prefix, config.TEST.TEST_EPOCH
     model_prefix = os.path.join(output_path, args.save_prefix)
-    arg_params, aux_params = load_param(model_prefix, config.TEST.TEST_EPOCH, convert=True, process=True)
+    arg_params, aux_params = load_param(model_prefix, config.TEST.TEST_EPOCH, convert=True, process=False)
     mod.init_params(arg_params=arg_params, aux_params=aux_params)
 
     # Create the tester
