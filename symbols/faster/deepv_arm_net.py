@@ -263,7 +263,7 @@ class deepv_arm_net(Symbol):
             rpn_cls_prob_reshape = mx.sym.Reshape(
                 data=rpn_cls_prob, shape=(0, 2 * num_anchors, -1, 0), name='rpn_cls_prob_reshape')
 
-            rois, _ = mx.sym.MultiProposal(cls_prob=rpn_cls_prob_reshape, bbox_pred=rpn_bbox_pred, im_info=im_info,
+            rois, rpn_scores = mx.sym.MultiProposal(cls_prob=rpn_cls_prob_reshape, bbox_pred=rpn_bbox_pred, im_info=im_info,
                                         name='rois', batch_size=self.test_nbatch,
                                         rpn_pre_nms_top_n=cfg.TEST.RPN_PRE_NMS_TOP_N,
                                         rpn_post_nms_top_n=cfg.TEST.RPN_POST_NMS_TOP_N,
@@ -303,7 +303,7 @@ class deepv_arm_net(Symbol):
                                        name='bbox_pred_reshape')
 
 #            group = mx.sym.Group([rois, cls_prob, im_ids])
-            group = mx.sym.Group([rois, cls_prob, bbox_pred, im_ids])
+            group = mx.sym.Group([rpn_scores, rois, cls_prob, bbox_pred, im_ids])
 
         self.sym = group
         return group

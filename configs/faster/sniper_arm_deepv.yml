@@ -13,7 +13,7 @@ default:
   kvstore: device
 network:
   pretrained: "./output/sniper_arm_deepv/sniper_arm_deepv/test/SNIPER"
-  pretrained_epoch: 51
+  pretrained_epoch: 58
   PIXEL_MEANS:
   - 103.939
   - 116.779
@@ -76,14 +76,14 @@ TRAIN:
 
 
   lr: 0.015 #0.002 #0.0005
-  lr_step: '57.33'
+  lr_step: '64.33'
   warmup: false
   fp16: true
   warmup_lr: 0.0005 #0.00005
   wd: 0.0001
   scale: 1.0
   warmup_step: 1000 #4000 #1000
-  begin_epoch: 52
+  begin_epoch: 59
   end_epoch: 700
 
   # whether flip image

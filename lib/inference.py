@@ -50,6 +50,7 @@ class Tester(object):
         self.result_path = imdb.result_path
         self.num_classes = imdb.num_classes
         self.class_names = imdb.classes
+        print self.class_names
         self.num_images = len(roidb)
         self.imdb_name = imdb.name
         self.nms_worker = nms_worker(cfg.TEST.NMS, cfg.TEST.NMS_SIGMA)
@@ -133,6 +134,81 @@ class Tester(object):
         print(print_str)
         if self.logger: self.logger.info(print_str)
 
+    def aggregate_rpn(self, scale_cls_dets, vis=False, cache_name='cache', vis_path=None, vis_name=None,
+                  pre_nms_db_divide=10, vis_ext='.png'):
+        n_scales = len(scale_cls_dets)
+        assert n_scales == len(self.cfg.TEST.VALID_RANGES), 'A valid range should be specified for each test scale'
+        all_boxes = [[] for _ in range(self.num_images)]
+        nms_pool = Pool(32)
+        if len(scale_cls_dets) > 1:
+            self.show_info('Aggregating detections from multiple scales and applying NMS...')
+        else:
+            self.show_info('Performing NMS on detections...')
+
+        # Apply ranges and store detections per category
+        parallel_nms_args = [[] for _ in range(pre_nms_db_divide)]
+        n_roi_per_pool = math.ceil(self.num_images/float(pre_nms_db_divide))
+
+        for i in range(self.num_images):
+            agg_dets = np.empty((0,5),dtype=np.float32)
+            for all_cls_dets, valid_range in zip(scale_cls_dets, self.cfg.TEST.VALID_RANGES):
+                cls_dets = all_cls_dets[i]
+                heights = cls_dets[:, 2] - cls_dets[:, 0]
+                widths = cls_dets[:, 3] - cls_dets[:, 1]
+                areas = widths * heights
+                #print 'areas', areas
+                lvalid_ids = np.where(areas > valid_range[0]*valid_range[0])[0] if valid_range[0] > 0 else \
+                    np.arange(len(areas))
+                uvalid_ids = np.where(areas <= valid_range[1]*valid_range[1])[0] if valid_range[1] > 0 else \
+                    np.arange(len(areas))
+                valid_ids = np.intersect1d(lvalid_ids,uvalid_ids)
+                cls_dets = cls_dets[valid_ids, :] if len(valid_ids) > 0 else cls_dets
+                print 'cls_dets', i, valid_range, cls_dets.shape
+                agg_dets = np.vstack((agg_dets, cls_dets))
+            parallel_nms_args[int(i/n_roi_per_pool)].append(agg_dets)
+
+        # Divide roidb and perform NMS in parallel to reduce the memory usage
+        im_offset = 0
+        for part in tqdm(range(pre_nms_db_divide)):
+            final_dets = nms_pool.map(self.nms_worker.worker, parallel_nms_args[part])
+            if len(final_dets) > 0:
+                print 'final_dets', final_dets[0].shape
+                all_boxes[im_offset] = final_dets[0]
+            n_part_im = len(final_dets)
+            im_offset += n_part_im
+        nms_pool.close()
+        # Limit number of detections to MAX_PER_IMAGE if requested and visualize if vis is True
+        for i in range(self.num_images):
+            if self.cfg.TEST.MAX_PER_IMAGE > 0:
+                image_scores = np.hstack([all_boxes[i][:, -1]])
+                if len(image_scores) > self.cfg.TEST.MAX_PER_IMAGE:
+                    image_thresh = np.sort(image_scores)[-self.cfg.TEST.MAX_PER_IMAGE]
+                    keep = np.where(all_boxes[i][:, -1] >= image_thresh)[0]
+                    all_boxes[i] = all_boxes[i][keep, :]
+            if vis:
+                visualization_path = vis_path if vis_path else os.path.join(self.cfg.TEST.VISUALIZATION_PATH,
+                                                                            cache_name)
+                if not os.path.isdir(visualization_path):
+                    os.makedirs(visualization_path)
+                import cv2
+                im = cv2.cvtColor(cv2.imread(self.roidb[i]['image']), cv2.COLOR_BGR2RGB)
+                visualize_dets(im,
+                               [[]] + [all_boxes[i]],
+                               1.0,
+                               self.cfg.network.PIXEL_MEANS, ['BKG', 'FRG'], threshold=0.9,
+                               save_path=os.path.join(visualization_path, '{}{}'.format(vis_name if vis_name else i,
+                                                                                         vis_ext)), transform=False)
+
+        if cache_name:
+            cache_path = os.path.join(self.result_path, cache_name)
+            if not os.path.isdir(cache_path):
+                os.makedirs(cache_path)
+            cache_path = os.path.join(cache_path, 'detections.pkl')
+            self.show_info('Done! Saving detections into: {}'.format(cache_path))
+            with open(cache_path, 'wb') as detfile:
+                cPickle.dump(all_boxes, detfile)
+        return all_boxes
+
     def aggregate(self, scale_cls_dets, vis=False, cache_name='cache', vis_path=None, vis_name=None,
                   pre_nms_db_divide=10, vis_ext='.png'):
         n_scales = len(scale_cls_dets)
@@ -152,6 +228,7 @@ class Tester(object):
             for j in range(1, self.num_classes):
                 agg_dets = np.empty((0,5),dtype=np.float32)
                 for all_cls_dets, valid_range in zip(scale_cls_dets, self.cfg.TEST.VALID_RANGES):
+                    print all_cls_dets[0]
                     cls_dets = all_cls_dets[j][i]
                     heights = cls_dets[:, 2] - cls_dets[:, 0]
                     widths = cls_dets[:, 3] - cls_dets[:, 1]
@@ -279,7 +356,6 @@ class Tester(object):
                                                                                post_time / data_counter ))
         if self.thread_pool:
             self.thread_pool.close()
-
         return all_boxes
 
     def extract_proposals(self, n_proposals=300, cache_name= 'cache', vis=False, vis_ext='.png'):
@@ -326,6 +402,7 @@ class Tester(object):
         self.show_info('Done! Saving detections into: {}'.format(cache_path))
         with open(cache_path, 'wb') as detfile:
             cPickle.dump(all_boxes, detfile)
+        #print all_boxes
         return all_boxes
 
 

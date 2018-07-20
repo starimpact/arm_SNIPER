@@ -4,7 +4,7 @@
 # SNIPER end-to-end training iterator
 # by Mahyar Najibi and Bharat Singh
 # --------------------------------------------------------------
-
+import cv2
 import matplotlib.pyplot as plt
 import mxnet as mx
 import numpy as np
@@ -201,7 +201,7 @@ class MNIteratorE2E(MNIteratorBase):
         self.label = [labels, bbox_targets, bbox_weights, gt_boxes]
         if self.cfg.TRAIN.WITH_MASK:
             self.label.append(mx.nd.array(encoded_masks))
-        #self.visualize(im_tensor, gt_boxes)
+        self.visualize(im_tensor, gt_boxes)
         return mx.io.DataBatch(data=self.data, label=self.label, pad=self.getpad(), index=self.getindex(),
                                provide_data=self.provide_data, provide_label=self.provide_label)
 
@@ -213,6 +213,8 @@ class MNIteratorE2E(MNIteratorBase):
             im = np.zeros((im_tensor.shape[2], im_tensor.shape[3], 3), dtype=np.uint8)
             for i in range(3):
                 im[:, :, i] = im_tensor[imi, i, :, :] + self.pixel_mean[2 - i]
+            num = np.random.randint(100000)
+            cv2.imwrite('debug/samples/train_{}_pos.jpg'.format(num), im) 
             # Visualize positives
             plt.imshow(im)
             cboxes = boxes[imi]
@@ -222,7 +224,6 @@ class MNIteratorE2E(MNIteratorBase):
                                      box[3] - box[1], fill=False,
                                      edgecolor='green', linewidth=3.5)
                 plt.gca().add_patch(rect)
-            num = np.random.randint(100000)
             plt.savefig('debug/visualization/test_{}_pos.png'.format(num))
             plt.cla()
             plt.clf()
