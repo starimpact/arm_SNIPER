@@ -201,7 +201,7 @@ class MNIteratorE2E(MNIteratorBase):
         self.label = [labels, bbox_targets, bbox_weights, gt_boxes]
         if self.cfg.TRAIN.WITH_MASK:
             self.label.append(mx.nd.array(encoded_masks))
-        self.visualize(im_tensor, gt_boxes)
+        #self.visualize(im_tensor, gt_boxes)
         return mx.io.DataBatch(data=self.data, label=self.label, pad=self.getpad(), index=self.getindex(),
                                provide_data=self.provide_data, provide_label=self.provide_label)
 

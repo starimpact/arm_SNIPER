@@ -107,8 +107,6 @@ class deepv_arm_net(Symbol):
             rpn_label = mx.sym.Variable(name='label')
             rpn_bbox_target = mx.sym.Variable(name='bbox_target')
             rpn_bbox_weight = mx.sym.Variable(name='bbox_weight')
-            gt_boxes = mx.sym.Variable(name='gt_boxes')
-            valid_ranges = mx.sym.Variable(name='valid_ranges')
             im_info = mx.sym.Variable(name='im_info')
         else:
             data = mx.sym.Variable(name="data")
@@ -223,6 +221,7 @@ class deepv_arm_net(Symbol):
             fc_new_2 = mx.sym.FullyConnected(name='fc_new_2', data=fc_new_1_relu, num_hidden=1024)
             fc_new_2_relu = mx.sym.Activation(data=fc_new_2, act_type='relu', name='fc_new_2_relu')
             num_classes = cfg.dataset.NUM_CLASSES
+            print 'cfg.dataset.NUM_CLASSES, ', cfg.dataset.NUM_CLASSES
             num_reg_classes = 1
             cls_score = mx.sym.FullyConnected(name='cls_score', data=fc_new_2_relu, num_hidden=num_classes)
             bbox_pred = mx.sym.FullyConnected(name='bbox_pred', data=fc_new_2_relu, num_hidden=num_reg_classes * 4)
@@ -253,8 +252,8 @@ class deepv_arm_net(Symbol):
                                             grad_scale=3 * grad_scale / float(
                                                 cfg.TRAIN.BATCH_IMAGES * cfg.TRAIN.RPN_BATCH_SIZE))
 
-            #group = mx.sym.Group([rpn_cls_prob, rpn_bbox_loss, mx.sym.BlockGrad(cls_prob), mx.sym.BlockGrad(bbox_loss), mx.sym.BlockGrad(rcnn_label)])
-            group = mx.sym.Group([rpn_cls_prob, rpn_bbox_loss, cls_prob, bbox_loss, mx.sym.BlockGrad(rcnn_label)])
+            group = mx.sym.Group([rpn_cls_prob, rpn_bbox_loss, mx.sym.BlockGrad(cls_prob), mx.sym.BlockGrad(bbox_loss), mx.sym.BlockGrad(rcnn_label)])
+            #group = mx.sym.Group([rpn_cls_prob, rpn_bbox_loss, cls_prob, bbox_loss, mx.sym.BlockGrad(rcnn_label)])
 
         else:
             # ROI Proposal

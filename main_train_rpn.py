@@ -98,30 +98,23 @@ if __name__ == '__main__':
     shape_dict = dict(train_iter.provide_data_single + train_iter.provide_label_single)
     sym_inst.infer_shape(shape_dict)
     print 'pretrained:', config.network.pretrained, config.network.pretrained_epoch
-    arg_params, aux_params = load_param(config.network.pretrained, config.network.pretrained_epoch, convert=True)
-#    arg_params = {}
-#    aux_params = {}
-
-    sym_inst.init_weight_rcnn(config, arg_params, aux_params)
+    if config.network.pretrained not in ['', None]:
+        arg_params, aux_params = load_param(config.network.pretrained, config.network.pretrained_epoch, convert=True)
+        sym_inst.init_weight_rcnn(config, arg_params, aux_params)
+    else:
+        print 'train from draft.......'
+        arg_params = None
+        aux_params = None
 
     # Creating the metrics
     eval_metric = metric.RPNAccMetric()
     cls_metric = metric.RPNLogLossMetric()
     bbox_metric = metric.RPNL1LossMetric()
-    rceval_metric = metric.RCNNAccMetric(config)
-    rccls_metric  = metric.RCNNLogLossMetric(config)
-    rcbbox_metric = metric.RCNNL1LossCRCNNMetric(config)
     eval_metrics = mx.metric.CompositeEvalMetric()
 
     eval_metrics.add(eval_metric)
     eval_metrics.add(cls_metric)
     eval_metrics.add(bbox_metric)
-    eval_metrics.add(rceval_metric)
-    eval_metrics.add(rccls_metric)
-    eval_metrics.add(rcbbox_metric)
-    if config.TRAIN.WITH_MASK:
-        mask_metric = metric.MaskLogLossMetric(config)
-        eval_metrics.add(mask_metric)
 
     optimizer_params = get_optim_params(config, len(train_iter), batch_size)
     print ('Optimizer params: {}'.format(optimizer_params))
@@ -134,7 +127,8 @@ if __name__ == '__main__':
 
     train_iter = PrefetchingIter(train_iter)
     mod.fit(train_iter, optimizer='sgd', optimizer_params=optimizer_params,
-            eval_metric=eval_metrics, begin_epoch=config.TRAIN.begin_epoch, 
+            eval_metric=eval_metrics, 
+            begin_epoch=config.TRAIN.begin_epoch, 
             num_epoch=config.TRAIN.end_epoch, kvstore=config.default.kvstore,
             batch_end_callback=batch_end_callback,
             epoch_end_callback=epoch_end_callback, arg_params=arg_params, aux_params=aux_params, allow_missing=True)
