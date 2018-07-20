@@ -148,6 +148,7 @@ class MNIteratorE2E(MNIteratorBase):
             for scalei, cscale in enumerate(self.cfg.TRAIN.SCALES):
                 if scalei == len(self.cfg.TRAIN.SCALES) - 1:
                     # Last or only scale
+                    #print 'im_scale', im_scale
                     srange[i, 0] = 0 if self.cfg.TRAIN.VALID_RANGES[scalei][0] < 0 else \
                         self.cfg.TRAIN.VALID_RANGES[scalei][0] * im_scale
                     srange[i, 1] = self.crop_size[1] if self.cfg.TRAIN.VALID_RANGES[scalei][1] < 0 else \
@@ -190,6 +191,7 @@ class MNIteratorE2E(MNIteratorBase):
             if self.cfg.TRAIN.WITH_MASK:
                 encoded_masks[i] = all_labels[i][4]
 
+        #print 'crop_size:', self.crop_size
         im_tensor = mx.nd.zeros((n_batch, 3, self.crop_size[0], self.crop_size[1]), dtype=np.float32)
         processed_list = processed_list.get()
         for i in range(len(processed_list)):
@@ -199,7 +201,7 @@ class MNIteratorE2E(MNIteratorBase):
         self.label = [labels, bbox_targets, bbox_weights, gt_boxes]
         if self.cfg.TRAIN.WITH_MASK:
             self.label.append(mx.nd.array(encoded_masks))
-        # self.visualize(im_tensor, gt_boxes)
+        #self.visualize(im_tensor, gt_boxes)
         return mx.io.DataBatch(data=self.data, label=self.label, pad=self.getpad(), index=self.getindex(),
                                provide_data=self.provide_data, provide_label=self.provide_label)
 

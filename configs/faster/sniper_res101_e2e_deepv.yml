@@ -5,14 +5,14 @@
 # --------------------------------------------------------------
 ---
 MXNET_VERSION: "mxnet"
-output_path: "./output/sniper_res101_bn"
-symbol: resnet_mx_101_e2e
+output_path: "./output/sniper_res50_bn_deepv"
+symbol: resnet_mx_50_e2e_deepv
 gpus: '0,1,2,3,4,5,6,7'
 CLASS_AGNOSTIC: true
 default:
   kvstore: device
 network:
-  pretrained: "./data/pretrained_model/resnet_mx_101_open"
+#  pretrained: "./data/pretrained_model/resnet_mx_101_open"
   pretrained_epoch: 0
   PIXEL_MEANS:
   - 103.939
@@ -38,12 +38,12 @@ network:
   - 24
   NUM_ANCHORS: 21
 dataset:
-  NUM_CLASSES: 81
-  dataset: coco
-  dataset_path: "./data/coco"
-  image_set: train2014+val2014
+  NUM_CLASSES: 2
+  dataset: deepv
+  dataset_path: "./data/deepv_train"
+  image_set: train 
   root_path: "./data"
-  test_image_set: test-dev2015
+  test_image_set: test
   proposal: rpn
 TRAIN:
   ## CHIP GENERATION PARAMS

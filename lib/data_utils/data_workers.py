@@ -60,6 +60,7 @@ class im_worker(object):
         # Crop if required
         if self.crop_size:
             crop = data[1]
+            #print 'crop', crop
             max_size = [self.crop_size, self.crop_size]
             im = im[int(crop[0][1]):int(crop[0][3]), int(crop[0][0]):int(crop[0][2]), :]
             scale = crop[1]

@@ -28,7 +28,7 @@ import argparse
 def parser():
     arg_parser = argparse.ArgumentParser('SNIPER training module')
     arg_parser.add_argument('--cfg', dest='cfg', help='Path to the config file',
-    							default='configs/faster/sniper_res101_e2e.yml',type=str)
+    							default='configs/faster/sniper_arm_deepv.yml',type=str)
     arg_parser.add_argument('--display', dest='display', help='Number of epochs between displaying loss info',
                             default=100, type=int)
     arg_parser.add_argument('--momentum', dest='momentum', help='BN momentum', default=0.995, type=float)
@@ -51,11 +51,13 @@ if __name__ == '__main__':
     nGPUs = len(context)
     print config.TRAIN
     batch_size = nGPUs * config.TRAIN.BATCH_IMAGES
+    print 'batch_size:', batch_size
 
     if not os.path.isdir(config.output_path):
         os.mkdir(config.output_path)
 
     # Create roidb
+    print config.dataset
     image_sets = [iset for iset in config.dataset.image_set.split('+')]
     roidbs = [load_proposal_roidb(config.dataset.dataset, image_set, config.dataset.root_path,
         config.dataset.dataset_path,
@@ -72,7 +74,7 @@ if __name__ == '__main__':
 
     print('Creating Iterator with {} Images'.format(len(roidb)))
     train_iter = MNIteratorE2E(roidb=roidb, config=config, batch_size=batch_size, nGPUs=nGPUs,
-                               threads=config.TRAIN.NUM_THREAD, pad_rois_to=400)
+                               threads=config.TRAIN.NUM_THREAD, pad_rois_to=400, crop_size=(216, 216))
     print('The Iterator has {} samples!'.format(len(train_iter)))
 
     # Creating the Logger
@@ -81,9 +83,10 @@ if __name__ == '__main__':
     # get list of fixed parameters
     print('Initializing the model...')
     sym_inst = eval('{}.{}'.format(config.symbol, config.symbol))(n_proposals=400, momentum=args.momentum)
-    sym = sym_inst.get_symbol_rcnn(config)
+    sym = sym_inst.get_symbol_rpn_ugly(config)
 
     fixed_param_names = get_fixed_param_names(config.network.FIXED_PARAMS, sym)
+    print 'fixed_param_names:', fixed_param_names
 
     # Creating the module
     mod = mx.mod.Module(symbol=sym,
@@ -95,9 +98,9 @@ if __name__ == '__main__':
     shape_dict = dict(train_iter.provide_data_single + train_iter.provide_label_single)
     sym_inst.infer_shape(shape_dict)
     print 'pretrained:', config.network.pretrained, config.network.pretrained_epoch
-    #arg_params, aux_params = load_param(config.network.pretrained, config.network.pretrained_epoch, convert=True)
-    arg_params = {}
-    aux_params = {}
+    arg_params, aux_params = load_param(config.network.pretrained, config.network.pretrained_epoch, convert=True)
+#    arg_params = {}
+#    aux_params = {}
 
     sym_inst.init_weight_rcnn(config, arg_params, aux_params)
 
@@ -131,6 +134,7 @@ if __name__ == '__main__':
 
     train_iter = PrefetchingIter(train_iter)
     mod.fit(train_iter, optimizer='sgd', optimizer_params=optimizer_params,
-            eval_metric=eval_metrics, num_epoch=config.TRAIN.end_epoch, kvstore=config.default.kvstore,
+            eval_metric=eval_metrics, begin_epoch=config.TRAIN.begin_epoch, 
+            num_epoch=config.TRAIN.end_epoch, kvstore=config.default.kvstore,
             batch_end_callback=batch_end_callback,
             epoch_end_callback=epoch_end_callback, arg_params=arg_params, aux_params=aux_params, allow_missing=True)

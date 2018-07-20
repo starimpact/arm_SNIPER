@@ -82,6 +82,7 @@ class RCNNAccMetric(mx.metric.EvalMetric):
         else:
             label = labels[self.label.index('rcnn_label')]
 
+        #print pred.shape
         last_dim = pred.shape[-1]
         pred_label = pred.asnumpy().reshape(-1, last_dim).argmax(axis=1).astype('int32')
         label = label.asnumpy().reshape(-1,).astype('int32')
@@ -90,7 +91,8 @@ class RCNNAccMetric(mx.metric.EvalMetric):
         keep_inds = np.where(label != -1)
         pred_label = pred_label[keep_inds]
         label = label[keep_inds]
-
+        
+        #print sum(pred_label==0), sum(label==0)
         self.sum_metric += np.sum(pred_label.flat == label.flat)
         self.num_inst += len(pred_label.flat)
 

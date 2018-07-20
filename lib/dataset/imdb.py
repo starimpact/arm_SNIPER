@@ -237,6 +237,9 @@ class IMDB(object):
             boxes[:, 0] = roi_rec['width'] - oldx2 - 1
             boxes[:, 2] = roi_rec['width'] - oldx1 - 1
             assert (boxes[:, 2] >= boxes[:, 0]).all()
+            #added by mingzhang
+            #if not (boxes[:, 2] >= boxes[:, 0]).all():
+            #    continue
             entry = {'image': roi_rec['image'],
                      'height': roi_rec['height'],
                      'width': roi_rec['width'],

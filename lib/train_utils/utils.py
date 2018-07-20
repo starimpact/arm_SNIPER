@@ -9,6 +9,7 @@ from train_utils.lr_scheduler import WarmupMultiBatchScheduler
 import os
 import logging
 import time
+import numpy as np
 
 def get_optim_params(cfg,roidb_len,batch_size):
     # Create scheduler
@@ -17,6 +18,7 @@ def get_optim_params(cfg,roidb_len,batch_size):
     lr_factor = cfg.TRAIN.lr_factor
     begin_epoch = cfg.TRAIN.begin_epoch
     lr_epoch = [float(epoch) for epoch in lr_step.split(',')]
+    #print 'lr_epoch, begin_epoch:', lr_epoch, begin_epoch
     lr_epoch_diff = [epoch - begin_epoch for epoch in lr_epoch if epoch > begin_epoch]
     lr_iters = [int(epoch * roidb_len / batch_size) for epoch in lr_epoch_diff]
     if cfg.TRAIN.fp16:
@@ -96,7 +98,18 @@ def load_param(prefix, epoch, convert=False, ctx=None, process=False):
     if process:
         tests = [k for k in arg_params.keys() if '_test' in k]
         for test in tests:
-            arg_params[test.replace('_test', '')] = arg_params.pop(test)
+            tmp = arg_params.pop(test)
+            print 'test:', test, tmp.shape
+            if False:
+                stds = np.array([0.1, 0.1, 0.2, 0.2])
+                stds2 = np.array([0.2, 0.2, 0.1, 0.1])
+                if 'weight' in test:
+                    tmp = (tmp.T / mx.nd.array(stds)).T
+                    tmp = (tmp.T * mx.nd.array(stds2)).T
+                elif 'bias' in test:
+                    tmp = tmp / mx.nd.array(stds)
+                    tmp = tmp * mx.nd.array(stds2)
+            arg_params[test.replace('_test', '')] = tmp
     return arg_params, aux_params
 
 
@@ -133,7 +146,8 @@ def create_logger(root_output_path, cfg, image_set):
     if not os.path.exists(final_output_path):
         os.makedirs(final_output_path)
 
-    log_file = '{}_{}.log'.format(cfg_name, time.strftime('%Y-%m-%d-%H-%M'))
+    #log_file = '{}_{}.log'.format(cfg_name, time.strftime('%Y-%m-%d-%H-%M'))
+    log_file = '{}_{}.log'.format(cfg_name, time.strftime('%Y-%m-%d'))
     head = '%(asctime)-15s %(message)s'
     logging.basicConfig(filename=os.path.join(final_output_path, log_file), format=head)
     logger = logging.getLogger()

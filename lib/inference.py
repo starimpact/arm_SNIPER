@@ -156,12 +156,14 @@ class Tester(object):
                     heights = cls_dets[:, 2] - cls_dets[:, 0]
                     widths = cls_dets[:, 3] - cls_dets[:, 1]
                     areas = widths * heights
+                    #print 'areas', areas
                     lvalid_ids = np.where(areas > valid_range[0]*valid_range[0])[0] if valid_range[0] > 0 else \
                         np.arange(len(areas))
                     uvalid_ids = np.where(areas <= valid_range[1]*valid_range[1])[0] if valid_range[1] > 0 else \
                         np.arange(len(areas))
                     valid_ids = np.intersect1d(lvalid_ids,uvalid_ids)
                     cls_dets = cls_dets[valid_ids, :] if len(valid_ids) > 0 else cls_dets
+                    #print 'cls_dets', cls_dets
                     agg_dets = np.vstack((agg_dets, cls_dets))
                 parallel_nms_args[int(i/n_roi_per_pool)].append(agg_dets)
 
@@ -169,6 +171,7 @@ class Tester(object):
         im_offset = 0
         for part in tqdm(range(pre_nms_db_divide)):
             final_dets = nms_pool.map(self.nms_worker.worker, parallel_nms_args[part])
+            #print 'final_dets', final_dets
             n_part_im = int(len(final_dets)/(self.num_classes-1))
             for i in range(n_part_im):
                 for j in range(1, self.num_classes):
@@ -233,6 +236,7 @@ class Tester(object):
                 for j in range(1, self.num_classes):
                     # Apply the score threshold
                     inds = np.where(cscores[:, j] > cls_thresh)[0]
+                    #print cls_thresh, inds
                     rem_scores = cscores[inds, j, np.newaxis]
                     rem_boxes = cboxes[inds, 0:4]
                     cls_dets = np.hstack((rem_boxes, rem_scores))
@@ -295,6 +299,7 @@ class Tester(object):
 
             stime = time.time()
             for i, (cscores, cboxes, im_id) in enumerate(zip(scores, boxes, im_ids)):
+                print cscores.shape, cboxes.shape, im_id
                 # Keep the requested number of rois
                 rem_scores = cscores[0:n_proposals, np.newaxis]
                 rem_boxes = cboxes[0:n_proposals, 0:4]

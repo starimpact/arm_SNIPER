@@ -12,3 +12,5 @@ debug/*
 *.idx
 *.lst
 *.o
+*.swp
+*.swo

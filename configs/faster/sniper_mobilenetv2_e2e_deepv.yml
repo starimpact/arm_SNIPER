@@ -5,45 +5,50 @@
 # --------------------------------------------------------------
 ---
 MXNET_VERSION: "mxnet"
-output_path: "./output/sniper_res101_bn"
-symbol: resnet_mx_101_e2e
-gpus: '0,1,2,3,4,5,6,7'
+output_path: "./output/sniper_mobilenetv2_bn_deepv"
+symbol: mobilenetv2_e2e_deepv
+gpus: '0,1,2,3'
 CLASS_AGNOSTIC: true
 default:
   kvstore: device
 network:
-  pretrained: "./data/pretrained_model/resnet_mx_101_open"
+#  pretrained: "./data/pretrained_model/mobilenetv2"
   pretrained_epoch: 0
   PIXEL_MEANS:
   - 103.939
   - 116.779
   - 123.68
-  RPN_FEAT_STRIDE: 16
+  RPN_FEAT_STRIDE: 32
 #  FIXED_PARAMS:
-#  - conv0
-#  - bn0
-#  - stage1
+#  - conv1
+#  - bn_conv1
+#  - res2
+#  - bn2
+#  - res3
+#  - bn3
+#  - res4
+#  - bn4
+#  - gamma
+#  - beta
 
   ANCHOR_RATIOS:
   - 0.5
   - 1
   - 2
   ANCHOR_SCALES:
+  - 1
   - 2
   - 4
-  - 7
-  - 10
-  - 13
-  - 16
-  - 24
-  NUM_ANCHORS: 21
+  - 8
+  - 12
+  NUM_ANCHORS: 15
 dataset:
-  NUM_CLASSES: 81
-  dataset: coco
-  dataset_path: "./data/coco"
-  image_set: train2014+val2014
+  NUM_CLASSES: 2 
+  dataset: deepv
+  dataset_path: "./data/deepv_train"
+  image_set: train
   root_path: "./data"
-  test_image_set: test-dev2015
+  test_image_set: test
   proposal: rpn
 TRAIN:
   ## CHIP GENERATION PARAMS
@@ -57,8 +62,8 @@ TRAIN:
   # Multi-processing params
   # These parameters are used for parallel chip generation, NMS, etc.
   # Please consider adjusting them for your system
-  NUM_PROCESS: 16 #64
-  NUM_THREAD: 4 #8
+  NUM_PROCESS: 64
+  NUM_THREAD: 8
 
   # Whether to train with segmentation mask
   WITH_MASK: false
@@ -78,25 +83,25 @@ TRAIN:
   - !!python/tuple [120,-1]
 
 
-  lr: 0.015 #0.002 #0.0005
+  lr: 0.025 #0.002 #0.0005
   lr_step: '5.33'
   warmup: true
   fp16: true
   warmup_lr: 0.0005 #0.00005
   wd: 0.0001
   scale: 100.0
-  warmup_step: 1000 #4000 #1000
+  warmup_step: 9000 #4000 #1000
   begin_epoch: 0
   end_epoch: 7
 
   # whether flip image
-  FLIP: true
+  FLIP: false
   # whether shuffle image
   SHUFFLE: true
   # whether use OHEM
   ENABLE_OHEM: true
   # size of images for each device, 2 for rcnn, 1 for rpn and e2e
-  BATCH_IMAGES: 8 #16
+  BATCH_IMAGES: 42
   # e2e changes behavior of anchor loader and metric
   END2END: true
   # R-CNN
@@ -207,7 +212,7 @@ TEST:
   VISUALIZATION_PATH: './debug/visualization'
   # Whether to visualize all intermediate scales
   # before aggregation (when doing multi-scale inference)
-  # If False, only final detections are saved to 
+  # If False, only final detections are saved to
   # VISUALIZATION_PATH
   VISUALIZE_INTERMEDIATE_SCALES: false
 

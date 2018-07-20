@@ -61,23 +61,15 @@ def main():
     db_info.result_path = 'data/demo'
 
     # Categories the detector trained for:
-    db_info.classes = [u'BG', u'person', u'bicycle', u'car', u'motorcycle', u'airplane',
-                       u'bus', u'train', u'truck', u'boat', u'traffic light', u'fire hydrant',
-                       u'stop sign', u'parking meter', u'bench', u'bird', u'cat', u'dog', u'horse', u'sheep', u'cow',
-                       u'elephant', u'bear', u'zebra', u'giraffe', u'backpack', u'umbrella', u'handbag', u'tie',
-                       u'suitcase', u'frisbee', u'skis', u'snowboard', u'sports\nball', u'kite', u'baseball\nbat',
-                       u'baseball glove', u'skateboard', u'surfboard', u'tennis racket', u'bottle', u'wine\nglass',
-                       u'cup', u'fork', u'knife', u'spoon', u'bowl', u'banana', u'apple', u'sandwich', u'orange',
-                       u'broccoli', u'carrot', u'hot dog', u'pizza', u'donut', u'cake', u'chair', u'couch',
-                       u'potted plant', u'bed', u'dining table', u'toilet', u'tv', u'laptop', u'mouse', u'remote',
-                       u'keyboard', u'cell phone', u'microwave', u'oven', u'toaster', u'sink', u'refrigerator', u'book',
-                       u'clock', u'vase', u'scissors', u'teddy bear', u'hair\ndrier', u'toothbrush']
+    db_info.classes = [u'BG', u'person', u'bicycle', u'car', u'motorcycle']
+    
     db_info.num_classes = len(db_info.classes)
+    print db_info.num_classes
 
     # Create the model
     sym_def = eval('{}.{}'.format(config.symbol, config.symbol))
     sym_inst = sym_def(n_proposals=400, test_nbatch=1)
-    sym = sym_inst.get_symbol_rcnn(config, is_train=False)
+    sym = sym_inst.get_symbol_rpn_ugly(config, is_train=False)
     test_iter = MNIteratorTest(roidb=roidb, config=config, batch_size=1, nGPUs=1, threads=1,
                                crop_size=None, test_scale=config.TEST.SCALES[0],
                                num_classes=db_info.num_classes)
@@ -93,8 +85,7 @@ def main():
     # Initialize the weights
     print output_path, args.save_prefix, config.TEST.TEST_EPOCH
     model_prefix = os.path.join(output_path, args.save_prefix)
-    arg_params, aux_params = load_param(model_prefix, config.TEST.TEST_EPOCH,
-                                        convert=True, process=True)
+    arg_params, aux_params = load_param(model_prefix, config.TEST.TEST_EPOCH, convert=True, process=True)
     mod.init_params(arg_params=arg_params, aux_params=aux_params)
 
     # Create the tester
@@ -111,6 +102,7 @@ def main():
         tester.set_scale(s)
         # Perform detection
         all_detections.append(tester.get_detections(vis=False, evaluate=False, cache_name=None))
+        #all_detections.append(tester.extract_proposals(vis=False, cache_name='./'))
 
     # Aggregate results from multiple scales and perform NMS
     tester = Tester(None, db_info, roidb, None, cfg=config, batch_size=1)

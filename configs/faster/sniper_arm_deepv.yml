@@ -5,21 +5,21 @@
 # --------------------------------------------------------------
 ---
 MXNET_VERSION: "mxnet"
-output_path: "./output/sniper_res101_bn"
-symbol: resnet_mx_101_e2e
-gpus: '0,1,2,3,4,5,6,7'
+output_path: "./output/sniper_arm_deepv"
+symbol: deepv_arm_net
+gpus: '0,1,2,3'
 CLASS_AGNOSTIC: true
 default:
   kvstore: device
 network:
-  pretrained: "./data/pretrained_model/resnet_mx_101_open"
-  pretrained_epoch: 0
+  pretrained: "./output/sniper_arm_deepv/sniper_arm_deepv/test/SNIPER"
+  pretrained_epoch: 51
   PIXEL_MEANS:
   - 103.939
   - 116.779
   - 123.68
-  RPN_FEAT_STRIDE: 16
-#  FIXED_PARAMS:
+  RPN_FEAT_STRIDE: 8
+  FIXED_PARAMS:
 #  - conv0
 #  - bn0
 #  - stage1
@@ -29,21 +29,18 @@ network:
   - 1
   - 2
   ANCHOR_SCALES:
+  - 1
   - 2
   - 4
-  - 7
-  - 10
-  - 13
-  - 16
-  - 24
-  NUM_ANCHORS: 21
+  - 8
+  NUM_ANCHORS: 12
 dataset:
-  NUM_CLASSES: 81
-  dataset: coco
-  dataset_path: "./data/coco"
-  image_set: train2014+val2014
+  NUM_CLASSES: 5
+  dataset: deepv
+  dataset_path: "./data/deepv_all"
+  image_set: test
   root_path: "./data"
-  test_image_set: test-dev2015
+  test_image_set: test
   proposal: rpn
 TRAIN:
   ## CHIP GENERATION PARAMS
@@ -57,8 +54,8 @@ TRAIN:
   # Multi-processing params
   # These parameters are used for parallel chip generation, NMS, etc.
   # Please consider adjusting them for your system
-  NUM_PROCESS: 16 #64
-  NUM_THREAD: 4 #8
+  NUM_PROCESS: 64
+  NUM_THREAD: 8
 
   # Whether to train with segmentation mask
   WITH_MASK: false
@@ -67,27 +64,27 @@ TRAIN:
   # The last scale (or the only scale) should be the desired max resolution in pixels
   # Other scales should be scaling coefficients
   SCALES:
-  - 3.0
-  - 1.667
-  - 512.0
+  - 0.6 #216/1080*3.0
+  - 0.32 #216/1080*1.6
+  - 216.0
 
   # Valid ranges in each scale
   VALID_RANGES:
-  - !!python/tuple [-1,80]
-  - !!python/tuple [32,150]
-  - !!python/tuple [120,-1]
+  - !!python/tuple [-1, 100]
+  - !!python/tuple [80,300]
+  - !!python/tuple [200, -1]
 
 
   lr: 0.015 #0.002 #0.0005
-  lr_step: '5.33'
-  warmup: true
+  lr_step: '57.33'
+  warmup: false
   fp16: true
   warmup_lr: 0.0005 #0.00005
   wd: 0.0001
-  scale: 100.0
+  scale: 1.0
   warmup_step: 1000 #4000 #1000
-  begin_epoch: 0
-  end_epoch: 7
+  begin_epoch: 52
+  end_epoch: 700
 
   # whether flip image
   FLIP: true
@@ -96,7 +93,7 @@ TRAIN:
   # whether use OHEM
   ENABLE_OHEM: true
   # size of images for each device, 2 for rcnn, 1 for rpn and e2e
-  BATCH_IMAGES: 8 #16
+  BATCH_IMAGES: 16
   # e2e changes behavior of anchor loader and metric
   END2END: true
   # R-CNN
@@ -157,13 +154,11 @@ TEST:
 
   # Whether to do multi-scale inference
   SCALES:
-  - !!python/tuple [1400, 2000]
-  - !!python/tuple [800, 1280]
-  - !!python/tuple [480, 512]
+  - !!python/tuple [216, 384]
+  - !!python/tuple [135, 240]
 
   # Number of images per gpu for each scale
   BATCH_IMAGES:
-  - 2
   - 2
   - 4
 
@@ -178,9 +173,8 @@ TEST:
   # to invalidate, -1 means unbounded, use
   # -1 everywhere if you want to have all proposals
   VALID_RANGES:
-  - !!python/tuple [-1,90]
-  - !!python/tuple [32,180]
-  - !!python/tuple [75,-1]
+  - !!python/tuple [-1, -1]
+  - !!python/tuple [-1, -1]
 
   # Use rpn to generate proposal
   HAS_RPN: true
@@ -201,13 +195,13 @@ TEST:
   NMS_SIGMA: 0.55
 
   # Which epoch of the training be used for testing
-  TEST_EPOCH: 7
+  TEST_EPOCH: 58
 
   # VISUALIZATION CONFIG
   VISUALIZATION_PATH: './debug/visualization'
   # Whether to visualize all intermediate scales
   # before aggregation (when doing multi-scale inference)
-  # If False, only final detections are saved to 
+  # If False, only final detections are saved to
   # VISUALIZATION_PATH
   VISUALIZE_INTERMEDIATE_SCALES: false
 
