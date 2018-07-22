@@ -61,6 +61,7 @@ class MNIteratorE2E(MNIteratorBase):
                 cur_roidb['neg_crops'] = ps[1]
                 cur_roidb['neg_props_in_chips'] = ps[2]
         chipindex = []
+        negchip_count = 0
         if self.cfg.TRAIN.USE_NEG_CHIPS:
             # Append negative chips
             for i, r in enumerate(self.roidb):
@@ -71,6 +72,7 @@ class MNIteratorE2E(MNIteratorBase):
                         sel_inds = np.random.permutation(sel_inds)[0:self.n_neg_per_im]
                     for ind in sel_inds:
                         chip_count = chip_count + 1
+                        negchip_count += 1
                         r['crops'].append(r['neg_crops'][ind])
                         r['props_in_chips'].append(r['neg_props_in_chips'][ind].astype(np.int32))
                 for j in range(len(r['crops'])):
@@ -80,7 +82,7 @@ class MNIteratorE2E(MNIteratorBase):
                 for j in range(len(r['crops'])):
                     chipindex.append(i)
 
-        print('Total number of extracted chips: {}'.format(chip_count))
+        print('Total number of extracted chips: {}, negs: {}'.format(chip_count, negchip_count))
         blocksize = self.batch_size
         chipindex = np.array(chipindex)
         if chipindex.shape[0] % blocksize > 0:
@@ -179,6 +181,7 @@ class MNIteratorE2E(MNIteratorBase):
         bbox_targets = mx.nd.zeros((n_batch, self.cfg.network.NUM_ANCHORS * 4, feat_height, feat_width), mx.cpu(0))
         bbox_weights = mx.nd.zeros((n_batch, self.cfg.network.NUM_ANCHORS * 4, feat_height, feat_width), mx.cpu(0))
         gt_boxes = -mx.nd.ones((n_batch, 100, 5))
+        vgt_idx = [[]] * n_batch 
 
         if self.cfg.TRAIN.WITH_MASK:
             encoded_masks = -mx.nd.ones((n_batch,100,500))
@@ -190,6 +193,7 @@ class MNIteratorE2E(MNIteratorBase):
                 bbox_targets[i][pids[0], pids[1], pids[2]] = all_labels[i][1]
                 bbox_weights[i][pids[0], pids[1], pids[2]] = 1.0
             gt_boxes[i] = all_labels[i][3]
+            vgt_idx[i] = all_labels[i][4]
             if self.cfg.TRAIN.WITH_MASK:
                 encoded_masks[i] = all_labels[i][4]
 
@@ -206,6 +210,7 @@ class MNIteratorE2E(MNIteratorBase):
         if self.cfg.TRAIN.WITH_MASK:
             self.label.append(mx.nd.array(encoded_masks))
         #self.visualize(im_tensor, gt_boxes)
+        self.visualize_valid_gt(im_tensor, gt_boxes, vgt_idx)
         return mx.io.DataBatch(data=self.data, label=self.label, pad=self.getpad(), index=self.getindex(),
                                provide_data=self.provide_data, provide_label=self.provide_label)
 
@@ -217,7 +222,7 @@ class MNIteratorE2E(MNIteratorBase):
             im = np.zeros((im_tensor.shape[2], im_tensor.shape[3], 3), dtype=np.uint8)
             for i in range(3):
                 im[:, :, i] = im_tensor[imi, i, :, :] + self.pixel_mean[2 - i]
-            num = np.random.randint(100000)
+            num = np.random.randint(100)
             cv2.imwrite('debug/samples/train_{}_pos.jpg'.format(num), im) 
             # Visualize positives
             plt.imshow(im)
@@ -227,6 +232,38 @@ class MNIteratorE2E(MNIteratorBase):
                                      box[2] - box[0],
                                      box[3] - box[1], fill=False,
                                      edgecolor='green', linewidth=3.5)
+                plt.gca().add_patch(rect)
+            plt.savefig('debug/visualization/test_{}_pos.png'.format(num))
+            plt.cla()
+            plt.clf()
+            plt.close()
+
+    def visualize_valid_gt(self, im_tensor, boxes, vgtid):
+        im_tensor = im_tensor.asnumpy()
+        boxes = boxes.asnumpy()
+
+        for imi in range(im_tensor.shape[0]):
+            im = np.zeros((im_tensor.shape[2], im_tensor.shape[3], 3), dtype=np.uint8)
+            for i in range(3):
+                im[:, :, i] = im_tensor[imi, i, :, :] + self.pixel_mean[2 - i]
+            num = np.random.randint(100)
+            cv2.imwrite('debug/samples/train_{}_pos.jpg'.format(num), im) 
+            # Visualize positives
+            plt.imshow(im)
+            cboxes = boxes[imi]
+            for box in cboxes:
+                rect = plt.Rectangle((box[0], box[1]),
+                                     box[2] - box[0],
+                                     box[3] - box[1], fill=False,
+                                     edgecolor='green', linewidth=3.5)
+                plt.gca().add_patch(rect)
+            vid = vgtid[imi]
+            valid_cboxes = boxes[imi][vid]
+            for box in valid_cboxes:
+                rect = plt.Rectangle((box[0], box[1]),
+                                     box[2] - box[0],
+                                     box[3] - box[1], fill=False,
+                                     edgecolor='red', linewidth=3.5)
                 plt.gca().add_patch(rect)
             plt.savefig('debug/visualization/test_{}_pos.png'.format(num))
             plt.cla()

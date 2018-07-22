@@ -172,7 +172,7 @@ class Tester(object):
         for part in tqdm(range(pre_nms_db_divide)):
             final_dets = nms_pool.map(self.nms_worker.worker, parallel_nms_args[part])
             if len(final_dets) > 0:
-                print 'final_dets', final_dets[0].shape
+                #print 'final_dets', final_dets[0].shape
                 all_boxes[im_offset] = final_dets[0]
             n_part_im = len(final_dets)
             im_offset += n_part_im
@@ -195,7 +195,7 @@ class Tester(object):
                 visualize_dets(im,
                                [[]] + [all_boxes[i]],
                                1.0,
-                               self.cfg.network.PIXEL_MEANS, ['BKG', 'FRG'], threshold=0.9,
+                               self.cfg.network.PIXEL_MEANS, ['BKG', 'FRG'], threshold=0.5,
                                save_path=os.path.join(visualization_path, '{}{}'.format(vis_name if vis_name else i,
                                                                                          vis_ext)), transform=False)
 

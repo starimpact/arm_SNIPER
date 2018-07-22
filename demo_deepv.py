@@ -69,7 +69,7 @@ def main():
     # Create the model
     sym_def = eval('{}.{}'.format(config.symbol, config.symbol))
     sym_inst = sym_def(n_proposals=400, test_nbatch=1)
-    sym = sym_inst.get_symbol_rpn_ugly(config, is_train=False)
+    sym = sym_inst.get_symbol_rpn(config, is_train=False)
     test_iter = MNIteratorTest(roidb=roidb, config=config, batch_size=1, nGPUs=1, threads=1,
                                crop_size=None, test_scale=config.TEST.SCALES[0],
                                num_classes=db_info.num_classes)

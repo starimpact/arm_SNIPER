@@ -12,8 +12,8 @@ CLASS_AGNOSTIC: true
 default:
   kvstore: device
 network:
-  pretrained: ""
-  pretrained_epoch: 58
+  pretrained: "output/sniper_arm_deepv/sniper_arm_deepv/train/SNIPER"
+  pretrained_epoch: 67
   PIXEL_MEANS:
   - 103.939
   - 116.779
@@ -38,7 +38,7 @@ dataset:
   NUM_CLASSES: 5
   dataset: deepv
   dataset_path: "./data/deepv_all"
-  image_set: test
+  image_set: train
   root_path: "./data"
   test_image_set: test
   proposal: rpn
@@ -70,9 +70,9 @@ TRAIN:
 
   # Valid ranges in each scale
   VALID_RANGES:
-  - !!python/tuple [-1, 100]
-  - !!python/tuple [80,300]
-  - !!python/tuple [200, -1]
+#  - !!python/tuple [-1, 100]
+#  - !!python/tuple [50,200]
+  - !!python/tuple [100, -1]
 
 
   lr: 0.015 #0.002 #0.0005
@@ -156,6 +156,7 @@ TEST:
   SCALES:
   - !!python/tuple [216, 384]
   - !!python/tuple [135, 240]
+#  - !!python/tuple [270, 480]
 
   # Number of images per gpu for each scale
   BATCH_IMAGES:
@@ -195,7 +196,7 @@ TEST:
   NMS_SIGMA: 0.55
 
   # Which epoch of the training be used for testing
-  TEST_EPOCH: 58
+  TEST_EPOCH: 67
 
   # VISUALIZATION CONFIG
   VISUALIZATION_PATH: './debug/visualization'

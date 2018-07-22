@@ -47,7 +47,7 @@ def visualize_dets(im, dets, scale, pixel_means, class_names, threshold=0.5, sav
                                  bbox[3] - bbox[1], fill=False,
                                  edgecolor=color, linewidth=3.5)
             ax.add_patch(rect)
-            ax.text(bbox[0], bbox[1] - 2 if bbox[1]-2 > 15 else bbox[1]+15, '{:s} {:.1f}'.format(name, score),
+            ax.text(bbox[0], bbox[1] - 2 if bbox[1]-2 > 15 else bbox[1]+15, '{:s} {:.3f}'.format(name, score),
                     bbox=dict(facecolor=color, alpha=0.5), fontsize=10, color='white')
 
     ax.set(xlim=[0, width], ylim=[height, 0], aspect=1)

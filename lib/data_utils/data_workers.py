@@ -295,7 +295,9 @@ class anchor_worker(object):
         if len(agt_boxes) > 0:
             fgt_boxes[:min(len(agt_boxes), 100), :] = np.hstack((agt_boxes, classes))
 
-        rval = [mx.nd.array(labels, dtype='float16'), bbox_targets, mx.nd.array(pids), mx.nd.array(fgt_boxes)]
+        #rval = [mx.nd.array(labels, dtype='float16'), bbox_targets, mx.nd.array(pids), mx.nd.array(fgt_boxes)]
+        #return valid ground truth boxes indexes
+        rval = [mx.nd.array(labels, dtype='float16'), bbox_targets, mx.nd.array(pids), mx.nd.array(fgt_boxes), valid_gtids]
         if has_mask:
             rval.append(mx.nd.array(encoded_polys))
         return rval
