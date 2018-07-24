@@ -181,7 +181,7 @@ class MNIteratorE2E(MNIteratorBase):
         bbox_targets = mx.nd.zeros((n_batch, self.cfg.network.NUM_ANCHORS * 4, feat_height, feat_width), mx.cpu(0))
         bbox_weights = mx.nd.zeros((n_batch, self.cfg.network.NUM_ANCHORS * 4, feat_height, feat_width), mx.cpu(0))
         gt_boxes = -mx.nd.ones((n_batch, 100, 5))
-        vgt_idx = [[]] * n_batch 
+        vgt_idx_scales = [[]] * n_batch 
 
         if self.cfg.TRAIN.WITH_MASK:
             encoded_masks = -mx.nd.ones((n_batch,100,500))
@@ -193,7 +193,7 @@ class MNIteratorE2E(MNIteratorBase):
                 bbox_targets[i][pids[0], pids[1], pids[2]] = all_labels[i][1]
                 bbox_weights[i][pids[0], pids[1], pids[2]] = 1.0
             gt_boxes[i] = all_labels[i][3]
-            vgt_idx[i] = all_labels[i][4]
+            vgt_idx_scales[i] = all_labels[i][4]
             if self.cfg.TRAIN.WITH_MASK:
                 encoded_masks[i] = all_labels[i][4]
 
@@ -210,7 +210,7 @@ class MNIteratorE2E(MNIteratorBase):
         if self.cfg.TRAIN.WITH_MASK:
             self.label.append(mx.nd.array(encoded_masks))
         #self.visualize(im_tensor, gt_boxes)
-        self.visualize_valid_gt(im_tensor, gt_boxes, vgt_idx)
+        self.visualize_valid_gt(im_tensor, gt_boxes, vgt_idx_scales)
         return mx.io.DataBatch(data=self.data, label=self.label, pad=self.getpad(), index=self.getindex(),
                                provide_data=self.provide_data, provide_label=self.provide_label)
 
@@ -238,7 +238,7 @@ class MNIteratorE2E(MNIteratorBase):
             plt.clf()
             plt.close()
 
-    def visualize_valid_gt(self, im_tensor, boxes, vgtid):
+    def visualize_valid_gt(self, im_tensor, boxes, vgtid_scales):
         im_tensor = im_tensor.asnumpy()
         boxes = boxes.asnumpy()
 
@@ -248,6 +248,8 @@ class MNIteratorE2E(MNIteratorBase):
                 im[:, :, i] = im_tensor[imi, i, :, :] + self.pixel_mean[2 - i]
             num = np.random.randint(100)
             cv2.imwrite('debug/samples/train_{}_pos.jpg'.format(num), im) 
+            vid, img_scale = vgtid_scales[imi]
+            print 'img_scale', img_scale
             # Visualize positives
             plt.imshow(im)
             cboxes = boxes[imi]
@@ -257,7 +259,10 @@ class MNIteratorE2E(MNIteratorBase):
                                      box[3] - box[1], fill=False,
                                      edgecolor='green', linewidth=3.5)
                 plt.gca().add_patch(rect)
-            vid = vgtid[imi]
+                area = math.sqrt((box[2] - box[0]) * (box[3] - box[1])) / img_scale
+                plt.text(box[0], box[1] - 2 if box[1]-2 > 15 else box[1]+15, '{:.1f}'.format(area),
+                    bbox=dict(facecolor='black', alpha=0.1), fontsize=10, color='white')
+
             valid_cboxes = boxes[imi][vid]
             for box in valid_cboxes:
                 rect = plt.Rectangle((box[0], box[1]),
@@ -265,7 +270,7 @@ class MNIteratorE2E(MNIteratorBase):
                                      box[3] - box[1], fill=False,
                                      edgecolor='red', linewidth=3.5)
                 plt.gca().add_patch(rect)
-            plt.savefig('debug/visualization/test_{}_pos.png'.format(num))
+            plt.savefig('debug/visualization/test_{}-{}_pos.png'.format(num, img_scale))
             plt.cla()
             plt.clf()
             plt.close()

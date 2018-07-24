@@ -64,14 +64,16 @@ TRAIN:
   # The last scale (or the only scale) should be the desired max resolution in pixels
   # Other scales should be scaling coefficients
   SCALES:
+  - 1.0 #216/1080*5.0
   - 0.6 #216/1080*3.0
   - 0.32 #216/1080*1.6
   - 216.0
 
   # Valid ranges in each scale
   VALID_RANGES:
-#  - !!python/tuple [-1, 100]
-#  - !!python/tuple [50,200]
+  - !!python/tuple [-1, 100]
+  - !!python/tuple [20, 200]
+  - !!python/tuple [60,300]
   - !!python/tuple [100, -1]
 
 

@@ -297,7 +297,7 @@ class anchor_worker(object):
 
         #rval = [mx.nd.array(labels, dtype='float16'), bbox_targets, mx.nd.array(pids), mx.nd.array(fgt_boxes)]
         #return valid ground truth boxes indexes
-        rval = [mx.nd.array(labels, dtype='float16'), bbox_targets, mx.nd.array(pids), mx.nd.array(fgt_boxes), valid_gtids]
+        rval = [mx.nd.array(labels, dtype='float16'), bbox_targets, mx.nd.array(pids), mx.nd.array(fgt_boxes), [valid_gtids, im_scale]]
         if has_mask:
             rval.append(mx.nd.array(encoded_polys))
         return rval
