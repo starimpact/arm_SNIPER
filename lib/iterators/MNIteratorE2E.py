@@ -133,7 +133,6 @@ class MNIteratorE2E(MNIteratorBase):
 
         processed_list = self.thread_pool.map_async(self.im_worker.worker, ims)
         worker_data = []
-        srange = np.zeros((len(processed_roidb), 2))
         chipinfo = np.zeros((len(processed_roidb), 3))
         for i in range(len(processed_roidb)):
             cropid = cropids[i]
@@ -141,6 +140,7 @@ class MNIteratorE2E(MNIteratorBase):
             gtids = np.where(processed_roidb[i]['max_overlaps'] == 1)[0]
             gt_boxes = processed_roidb[i]['boxes'][gtids, :]
             boxes = processed_roidb[i]['boxes'].copy()
+            #print 'boxes, gt_boxes', len(boxes), len(gt_boxes)
             cur_crop = processed_roidb[i]['crops'][cropid][0]
             im_scale = processed_roidb[i]['crops'][cropid][1]
             height = processed_roidb[i]['crops'][cropid][2]
@@ -149,21 +149,6 @@ class MNIteratorE2E(MNIteratorBase):
             if self.cfg.TRAIN.WITH_MASK:
                 gt_masks = processed_roidb[i]['gt_masks']
 
-            for scalei, cscale in enumerate(self.cfg.TRAIN.SCALES):
-                if scalei == len(self.cfg.TRAIN.SCALES) - 1:
-                    # Last or only scale
-                    #print 'im_scale', im_scale
-                    srange[i, 0] = 0 if self.cfg.TRAIN.VALID_RANGES[scalei][0] < 0 else \
-                        self.cfg.TRAIN.VALID_RANGES[scalei][0] * im_scale
-                    srange[i, 1] = self.crop_size[1] if self.cfg.TRAIN.VALID_RANGES[scalei][1] < 0 else \
-                        self.cfg.TRAIN.VALID_RANGES[scalei][1] * im_scale  # max scale
-                elif im_scale == cscale:
-                    # Intermediate scale
-                    srange[i, 0] = 0 if self.cfg.TRAIN.VALID_RANGES[scalei][0] < 0 else \
-                        self.cfg.TRAIN.VALID_RANGES[scalei][0] * self.cfg.TRAIN.SCALES[scalei]
-                    srange[i, 1] = self.crop_size[1] if self.cfg.TRAIN.VALID_RANGES[scalei][1] < 0 else \
-                        self.cfg.TRAIN.VALID_RANGES[scalei][1] * self.cfg.TRAIN.SCALES[scalei]
-                    break
             chipinfo[i, 0] = height
             chipinfo[i, 1] = width
             chipinfo[i, 2] = im_scale
@@ -203,14 +188,12 @@ class MNIteratorE2E(MNIteratorBase):
         for i in range(len(processed_list)):
             im_tensor[i] = processed_list[i]
 
-        #self.data = [im_tensor, mx.nd.array(srange), mx.nd.array(chipinfo)]
         self.data = [im_tensor]
-        #self.label = [labels, bbox_targets, bbox_weights, gt_boxes]
         self.label = [labels, bbox_targets, bbox_weights]
         if self.cfg.TRAIN.WITH_MASK:
             self.label.append(mx.nd.array(encoded_masks))
         #self.visualize(im_tensor, gt_boxes)
-        self.visualize_valid_gt(im_tensor, gt_boxes, vgt_idx_scales)
+        #self.visualize_valid_gt(im_tensor, gt_boxes, vgt_idx_scales)
         return mx.io.DataBatch(data=self.data, label=self.label, pad=self.getpad(), index=self.getindex(),
                                provide_data=self.provide_data, provide_label=self.provide_label)
 
@@ -248,7 +231,7 @@ class MNIteratorE2E(MNIteratorBase):
                 im[:, :, i] = im_tensor[imi, i, :, :] + self.pixel_mean[2 - i]
             num = np.random.randint(100)
             cv2.imwrite('debug/samples/train_{}_pos.jpg'.format(num), im) 
-            vid, img_scale = vgtid_scales[imi]
+            vid, invid, img_scale = vgtid_scales[imi]
             print 'img_scale', img_scale
             # Visualize positives
             plt.imshow(im)
@@ -269,6 +252,13 @@ class MNIteratorE2E(MNIteratorBase):
                                      box[2] - box[0],
                                      box[3] - box[1], fill=False,
                                      edgecolor='red', linewidth=3.5)
+                plt.gca().add_patch(rect)
+            invalid_cboxes = boxes[imi][invid]
+            for box in invalid_cboxes:
+                rect = plt.Rectangle((box[0], box[1]),
+                                     box[2] - box[0],
+                                     box[3] - box[1], fill=False,
+                                     edgecolor='blue', linewidth=3.5)
                 plt.gca().add_patch(rect)
             plt.savefig('debug/visualization/test_{}-{}_pos.png'.format(num, img_scale))
             plt.cla()
