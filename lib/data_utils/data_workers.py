@@ -398,9 +398,7 @@ class chip_worker(object):
             else:
                 # Other scales
                 ids = np.where((area*im_scale >= self.valid_ranges[scale_i][0]*self.chip_size) &
-                               (area*im_scale < self.valid_ranges[scale_i][1]*self.chip_size) &
-                               (max_sizes < (self.chip_size - self.chip_stride - 1) / im_scale) &
-                               (widths >= 2) & (heights >= 2))[0]
+                               (area*im_scale < self.valid_ranges[scale_i][1]*self.chip_size))[0]
             valid_ids.append(ids)
         valid_boxes = [r['boxes'][ids].astype(np.float) for ids in valid_ids]
 

@@ -193,7 +193,7 @@ class MNIteratorE2E(MNIteratorBase):
         if self.cfg.TRAIN.WITH_MASK:
             self.label.append(mx.nd.array(encoded_masks))
         #self.visualize(im_tensor, gt_boxes)
-        #self.visualize_valid_gt(im_tensor, gt_boxes, vgt_idx_scales)
+        self.visualize_valid_gt(im_tensor, gt_boxes, vgt_idx_scales)
         return mx.io.DataBatch(data=self.data, label=self.label, pad=self.getpad(), index=self.getindex(),
                                provide_data=self.provide_data, provide_label=self.provide_label)
 

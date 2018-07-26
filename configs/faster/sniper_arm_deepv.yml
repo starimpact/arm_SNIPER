@@ -38,7 +38,7 @@ dataset:
   NUM_CLASSES: 5
   dataset: deepv
   dataset_path: "./data/deepv_all"
-  image_set: train
+  image_set: test
   root_path: "./data"
   test_image_set: test
   proposal: rpn
@@ -64,9 +64,9 @@ TRAIN:
   # The last scale (or the only scale) should be the desired max resolution in pixels
   # Other scales should be scaling coefficients
   SCALES:
-  - 0.8 #384/1920*3.0
-  - 0.6 #384/1920*1.6
-  - 0.4 #384/1920*1.6
+  - 0.7 #384/1920*3.0
+  - 0.5 #384/1920*1.6
+  - 0.3 #384/1920*1.6
   - 288.0
 
   # Valid ranges in each scale
