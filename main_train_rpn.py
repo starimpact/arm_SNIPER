@@ -74,7 +74,7 @@ if __name__ == '__main__':
 
     print('Creating Iterator with {} Images'.format(len(roidb)))
     train_iter = MNIteratorE2E(roidb=roidb, config=config, batch_size=batch_size, nGPUs=nGPUs,
-                               threads=config.TRAIN.NUM_THREAD, pad_rois_to=400, crop_size=(216, 216))
+                               threads=config.TRAIN.NUM_THREAD, pad_rois_to=400, crop_size=(288, 288))
     print('The Iterator has {} samples!'.format(len(train_iter)))
 
     # Creating the Logger

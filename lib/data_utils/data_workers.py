@@ -310,12 +310,7 @@ class chip_worker(object):
         rng_len = len(cfg.TRAIN.VALID_RANGES)
         for ri in xrange(rng_len):
            rng = cfg.TRAIN.VALID_RANGES[ri]
-           if ri==rng_len-1:
-             assert rng[0]<1.0 and rng[0]>0 and rng[1]==-1
-           elif ri==0:
-             assert rng[1]<1.0 and rng[1]>0 and rng[0]==-1
-           else:
-             assert rng[1]<1.0 and rng[1]>0 and rng[0]<1.0 and rng[0]>0
+           assert rng[1]<1.0 and rng[1]>0 and rng[0]<1.0 and rng[0]>0
         self.valid_ranges = cfg.TRAIN.VALID_RANGES
         self.scales = cfg.TRAIN.SCALES
         self.chip_size = chip_size
@@ -345,10 +340,10 @@ class chip_worker(object):
             if i == len(self.scales)-1:
                 # The coarsest (or possibly the only scale)
                 im_scale /= float(im_size_max)
-                ids = np.where((area*im_scale >= self.valid_ranges[i][0]*self.chip_size))[0]
+                ids = np.where((area*im_scale >= self.valid_ranges[i][0]*self.chip_size) & (area*im_scale < self.valid_ranges[i][1]*self.chip_size))[0]
             elif i == 0:
                 # The finest scale (but not the only scale)
-                ids = np.where((area*im_scale < self.valid_ranges[i][1]*self.chip_size) &
+                ids = np.where((area*im_scale >= self.valid_ranges[i][0]*self.chip_size) & (area*im_scale < self.valid_ranges[i][1]*self.chip_size) &
                                (ms < (self.chip_size - self.chip_stride - 1) / im_scale) & (ws >= 2) & (hs >= 2))[0]
             else:
                 # An intermediate scale
@@ -398,10 +393,12 @@ class chip_worker(object):
             if scale_i == len(self.scales) - 1:
                 # The coarsest scale (or the only scale)
                 im_scale /= float(im_size_max)
-                ids = np.where((area*im_scale >= self.valid_ranges[scale_i][0]*self.chip_size))[0]
+                ids = np.where((area*im_scale >= self.valid_ranges[scale_i][0]*self.chip_size) & 
+                               (area*im_scale < self.valid_ranges[scale_i][1]*self.chip_size))[0]
             else:
                 # Other scales
-                ids = np.where((area*im_scale < self.valid_ranges[scale_i][1]*self.chip_size) &
+                ids = np.where((area*im_scale >= self.valid_ranges[scale_i][0]*self.chip_size) &
+                               (area*im_scale < self.valid_ranges[scale_i][1]*self.chip_size) &
                                (max_sizes < (self.chip_size - self.chip_stride - 1) / im_scale) &
                                (widths >= 2) & (heights >= 2))[0]
             valid_ids.append(ids)
@@ -426,12 +423,12 @@ class chip_worker(object):
                         if scale_i == len(self.scales) - 1:
                             # The coarsest scale (or the only scale)
                             im_scale = self.scales[scale_i]/float(im_size_max)
-                            if x2 - x1 >= 1 and y2 - y1 >= 1 and area*im_scale >= self.valid_ranges[scale_i][0]*self.chip_size:
+                            if x2 - x1 >= 1 and y2 - y1 >= 1 and area*im_scale >= self.valid_ranges[scale_i][0]*self.chip_size and area*im_scale <= self.valid_ranges[scale_i][1]*self.chip_size:
                                 props_in_chips[all_chip_ids[scale_i][cid]].append(valid_ids[scale_i][pi])
                                 covered_boxes[scale_i][pi] = True
                         else:
                             im_scale = self.scales[scale_i]
-                            if x2 - x1 >= 1 and y2 - y1 >= 1 and area*im_scale <= self.valid_ranges[scale_i][1]*self.chip_size:
+                            if x2 - x1 >= 1 and y2 - y1 >= 1 and area*im_scale >= self.valid_ranges[scale_i][0]*self.chip_size and area*im_scale <= self.valid_ranges[scale_i][1]*self.chip_size:
                                 props_in_chips[all_chip_ids[scale_i][cid]].append(valid_ids[scale_i][pi])
                                 covered_boxes[scale_i][pi] = True
         if self.use_neg_chips:
@@ -465,11 +462,11 @@ class chip_worker(object):
                         area = math.sqrt(abs((x2 - x1) * (y2 - y1)))
                         if scale_i == len(self.scales) - 1:
                             im_scale = self.scales[scale_i]/float(im_size_max)
-                            if x2 - x1 >= 1 and y2 - y1 >= 1 and area*im_scale >= self.valid_ranges[scale_i][0]*self.chip_size:
+                            if x2 - x1 >= 1 and y2 - y1 >= 1 and area*im_scale >= self.valid_ranges[scale_i][0]*self.chip_size and area*im_scale < self.valid_ranges[scale_i][1]*self.chip_size:
                                 neg_props_in_chips[neg_chip_ids[scale_i][cid]].append(neg_ids[scale_i][pi])
                         else:
                             im_scale = self.scales[scale_i]
-                            if x2 - x1 >= 1 and y2 - y1 >= 1 and area*im_scale < self.valid_ranges[scale_i][1]*self.chip_size:
+                            if x2 - x1 >= 1 and y2 - y1 >= 1 and area*im_scale >= self.valid_ranges[scale_i][0]*self.chip_size and area*im_scale < self.valid_ranges[scale_i][1]*self.chip_size:
                                 neg_props_in_chips[neg_chip_ids[scale_i][cid]].append(neg_ids[scale_i][pi])
             # Final negative chips extracted:
             final_neg_chips = []

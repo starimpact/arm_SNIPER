@@ -12,8 +12,8 @@ CLASS_AGNOSTIC: true
 default:
   kvstore: device
 network:
-  pretrained: "output/sniper_arm_deepv/sniper_arm_deepv/train/SNIPER"
-  pretrained_epoch: 67
+  pretrained: "./output/sniper_arm_deepv/sniper_arm_deepv/train/SNIPER"
+  pretrained_epoch: 3
   PIXEL_MEANS:
   - 103.939
   - 116.779
@@ -38,7 +38,7 @@ dataset:
   NUM_CLASSES: 5
   dataset: deepv
   dataset_path: "./data/deepv_all"
-  image_set: test
+  image_set: train
   root_path: "./data"
   test_image_set: test
   proposal: rpn
@@ -55,7 +55,7 @@ TRAIN:
   # These parameters are used for parallel chip generation, NMS, etc.
   # Please consider adjusting them for your system
   NUM_PROCESS: 64
-  NUM_THREAD: 8
+  NUM_THREAD: 64
 
   # Whether to train with segmentation mask
   WITH_MASK: false
@@ -64,15 +64,17 @@ TRAIN:
   # The last scale (or the only scale) should be the desired max resolution in pixels
   # Other scales should be scaling coefficients
   SCALES:
-  - 0.6 #216/1080*3.0
-  - 0.32 #216/1080*1.6
-  - 216.0
+  - 0.8 #384/1920*3.0
+  - 0.6 #384/1920*1.6
+  - 0.4 #384/1920*1.6
+  - 288.0
 
   # Valid ranges in each scale
   VALID_RANGES:
-  - !!python/tuple [-1, 0.6]
-  - !!python/tuple [0.05,0.6]
-  - !!python/tuple [0.05, -1]
+  - !!python/tuple [0.1, 0.6]
+  - !!python/tuple [0.1, 0.6]
+  - !!python/tuple [0.1, 0.6]
+  - !!python/tuple [0.1, 0.6]
 
 
   lr: 0.015 #0.002 #0.0005
@@ -83,7 +85,7 @@ TRAIN:
   wd: 0.0001
   scale: 1.0
   warmup_step: 1000 #4000 #1000
-  begin_epoch: 60
+  begin_epoch: 4
   end_epoch: 700
 
   # whether flip image
