@@ -18,7 +18,7 @@ from symbols.faster import *
 from configs.faster.default_configs import config, update_config, update_config_from_list
 import mxnet as mx
 from train_utils import metric
-from train_utils.utils import get_optim_params, get_fixed_param_names, create_logger, load_param
+from train_utils.utils import get_optim_params, get_optim_params_zm, get_fixed_param_names, create_logger, load_param
 from iterators.PrefetchingIter import PrefetchingIter
 
 from data_utils.load_data import load_proposal_roidb, merge_roidb, filter_roidb
@@ -74,7 +74,7 @@ if __name__ == '__main__':
 
     print('Creating Iterator with {} Images'.format(len(roidb)))
     train_iter = MNIteratorE2E(roidb=roidb, config=config, batch_size=batch_size, nGPUs=nGPUs,
-                               threads=config.TRAIN.NUM_THREAD, pad_rois_to=400, crop_size=(288, 288))
+                               threads=config.TRAIN.NUM_THREAD, pad_rois_to=400, crop_size=(216, 216))
     print('The Iterator has {} samples!'.format(len(train_iter)))
 
     # Creating the Logger
@@ -116,7 +116,7 @@ if __name__ == '__main__':
     eval_metrics.add(cls_metric)
     eval_metrics.add(bbox_metric)
 
-    optimizer_params = get_optim_params(config, len(train_iter), batch_size)
+    optimizer_params = get_optim_params_zm(config, len(train_iter), batch_size)
     print ('Optimizer params: {}'.format(optimizer_params))
 
     # Checkpointing

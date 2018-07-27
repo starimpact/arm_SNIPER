@@ -260,19 +260,19 @@ class anchor_worker(object):
                 max_overlapsn = overlapsn[np.arange(len(inds_inside)), argmax_overlapsn]
                 if len(invalid_boxes) > 0:
                     labels[max_overlapsn > 0.3] = -1
-
-        # subsample positive labels if we have too many
-        fg_inds = np.where(labels == 1)[0]
-        if len(fg_inds) > self.num_fg:
-            disable_inds = npr.choice(fg_inds, size=(len(fg_inds) - self.num_fg), replace=False)
-            labels[disable_inds] = -1
-
-        # subsample negative labels if we have too many
-        num_bg = self.batch_size - np.sum(labels == 1)
-        bg_inds = np.where(labels == 0)[0]
-        if len(bg_inds) > num_bg:
-            disable_inds = npr.choice(bg_inds, size=(len(bg_inds) - num_bg), replace=False)
-            labels[disable_inds] = -1
+#comment by starimpact
+#        # subsample positive labels if we have too many
+#        fg_inds = np.where(labels == 1)[0]
+#        if len(fg_inds) > self.num_fg:
+#            disable_inds = npr.choice(fg_inds, size=(len(fg_inds) - self.num_fg), replace=False)
+#            labels[disable_inds] = -1
+#
+#        # subsample negative labels if we have too many
+#        num_bg = self.batch_size - np.sum(labels == 1)
+#        bg_inds = np.where(labels == 0)[0]
+#        if len(bg_inds) > num_bg:
+#            disable_inds = npr.choice(bg_inds, size=(len(bg_inds) - num_bg), replace=False)
+#            labels[disable_inds] = -1
 
         bbox_targets = np.zeros((len(inds_inside), 4), dtype=np.float32)
         if gt_boxes.size > 0:

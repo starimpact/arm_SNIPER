@@ -195,7 +195,7 @@ class Tester(object):
                 visualize_dets(im,
                                [[]] + [all_boxes[i]],
                                1.0,
-                               self.cfg.network.PIXEL_MEANS, ['BKG', 'FRG'], threshold=0.5,
+                               self.cfg.network.PIXEL_MEANS, ['BKG', 'FRG'], threshold=0.9,
                                save_path=os.path.join(visualization_path, '{}{}'.format(vis_name if vis_name else i,
                                                                                          vis_ext)), transform=False)
 

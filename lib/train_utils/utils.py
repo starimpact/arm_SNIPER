@@ -44,6 +44,36 @@ def get_optim_params(cfg,roidb_len,batch_size):
     return optim_params
 
 
+def get_optim_params_zm(cfg,roidb_len,batch_size):
+    # Create scheduler
+    base_lr = cfg.TRAIN.lr
+    lr_step = cfg.TRAIN.lr_step
+    lr_factor = cfg.TRAIN.lr_factor
+    lr_epoch = [(epoch+1)*lr_step for epoch in range(int(roidb_len*1.0/batch_size/lr_step)+1)]
+    print 'lr_epoch', lr_epoch, lr_factor
+    lr_scheduler = mx.lr_scheduler.MultiFactorScheduler(lr_epoch, lr_factor)
+
+    if cfg.TRAIN.fp16 == True:
+        optim_params = {'momentum': cfg.TRAIN.momentum,
+                        'wd': cfg.TRAIN.wd,
+                        'learning_rate': base_lr,
+                        'rescale_grad': 1.0/batch_size,
+                        'multi_precision': True,
+                        'clip_gradient': None,
+                        'lr_scheduler': lr_scheduler}
+    else:
+        optim_params = {'momentum': cfg.TRAIN.momentum,
+                        'wd': cfg.TRAIN.wd,
+                        'learning_rate': base_lr,
+                        'rescale_grad': 1.0,
+                        'clip_gradient': None,
+                        'lr_scheduler': lr_scheduler}
+
+    return optim_params
+
+
+
+
 def load_checkpoint(prefix, epoch):
     """
     Load model checkpoint from file.
