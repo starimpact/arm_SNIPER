@@ -5,4 +5,11 @@
 #python demo_deepv.py --im_path data/demo/COCO_val2014_000000357978.jpg
 #python demo_deepv.py --im_path data/demo/82338.jpg
 #python demo_deepv.py --im_path data/demo/93136.jpg
-python demo_deepv.py --im_path data/demo/demo.jpg
+#python demo_deepv.py --im_path data/demo/demo.jpg
+#python demo_deepv.py --im_path data/demo/hongjiang1.png
+#dst='data/demo/hongjiang'
+dst='data/demo/haidian'
+for i in `ls ${dst}`;do
+  echo ${i}
+  python demo_deepv.py --im_path ${dst}/${i}
+done

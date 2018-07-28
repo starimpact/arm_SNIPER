@@ -60,6 +60,11 @@ class MNIteratorTest(MNIteratorBase):
             extra_vert = self.batch_size - (vert_inds.shape[0]%self.batch_size)
             vert_inds = np.hstack((vert_inds, vert_inds[0:extra_vert]))
         inds = np.hstack((horz_inds, vert_inds))
+        #if still lower than batch_size, throw it....
+        if horz_inds.shape[0]%self.batch_size>0:
+            inds = vert_inds
+        elif vert_inds.shape[0]%self.batch_size>0:
+            inds = horz_inds
         extra = inds.shape[0] % self.batch_size
         assert extra==0,'The number of samples here should be divisible by batch size'
         self.inds = inds

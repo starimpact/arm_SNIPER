@@ -12,7 +12,7 @@ and transform them into IMDB format. Selective search is used for proposals, see
 function. Results are written as the Pascal VOC format. Evaluation is based on mAP
 criterion.
 """
-
+from __future__ import print_function
 try:
     import cPickle as pickle
 except ImportError:
@@ -21,25 +21,27 @@ import cv2
 import os
 import numpy as np
 import PIL
+import matplotlib.pyplot as plt
+
 
 from dataset.imdb import IMDB
 from dataset.pascal_voc_eval import voc_eval, voc_eval_sds
 from dataset.ds_utils import unique_boxes, filter_small_boxes
 
 class deepv(IMDB):
-    def __init__(self, image_set, root_path, devkit_path, result_path=None, mask_size=-1, binary_thresh=None, load_mask=False):
+    def __init__(self, image_set, root_path, dataset_path, result_path=None, mask_size=-1, binary_thresh=None, load_mask=False):
         """
         fill basic information to initialize imdb
         :param image_set: 2007_trainval, 2007_test, etc
         :param root_path: 'selective_search_data' and 'cache'
-        :param devkit_path: data and results
+        :param dataset_path: data and results
         :return: imdb object
         """
-        super(deepv, self).__init__('deepv', image_set, root_path, devkit_path, result_path)  # set self.name
+        super(deepv, self).__init__('deepv', image_set, root_path, dataset_path, result_path)  # set self.name
 
         self.root_path = root_path
-        self.devkit_path = devkit_path
-        self.data_path = devkit_path
+        self.dataset_path = dataset_path
+        self.data_path = dataset_path
 
         self.classes = ['__background__',  # always index 0
                         'person', 'car', 'bicycle', 'tricycle']
@@ -91,11 +93,12 @@ class deepv(IMDB):
         :return: imdb[image_index]['boxes', 'gt_classes', 'gt_overlaps', 'flipped']
         """
         cache_file = os.path.join(self.cache_path, self.name + '_gt_roidb.pkl')
-        if os.path.exists(cache_file):
-            with open(cache_file, 'rb') as fid:
-                roidb = pickle.load(fid)
-            print('{} gt roidb loaded from {}'.format(self.name, cache_file))
-            return roidb
+        # ignore cache
+        # if os.path.exists(cache_file):
+        #     with open(cache_file, 'rb') as fid:
+        #         roidb = pickle.load(fid)
+        #     print('{} gt roidb loaded from {}'.format(self.name, cache_file))
+        #     return roidb
 
         gt_roidb = [self.load_pascal_annotation(index) for index in self.image_set_index]
         with open(cache_file, 'wb') as fid:
@@ -141,7 +144,11 @@ class deepv(IMDB):
             y1 = float(bbox.find('ymin').text) - 1
             x2 = float(bbox.find('xmax').text) - 1
             y2 = float(bbox.find('ymax').text) - 1
-            cls = class_to_index[obj.find('name').text.lower().strip()]
+            obj_cls = obj.find('name').text.lower().strip()
+            if obj_cls in self.classes:
+                cls = class_to_index[obj_cls]
+            else:
+                continue
             boxes[ix, :] = [x1, y1, x2, y2]
             gt_classes[ix] = cls
             overlaps[ix, cls] = 1.0
@@ -319,7 +326,7 @@ class deepv(IMDB):
         VOCdevkit/results/VOC2007/Main/<comp_id>_det_test_aeroplane.txt
         :return: a string template
         """
-        res_file_folder = os.path.join(self.result_path, 'results', 'deepv', 'Main')
+        res_file_folder = os.path.join(self.result_path, 'results', 'deepv')
         comp_id = self.config['comp_id']
         filename = comp_id + '_det_' + self.image_set + '_{:s}.txt'
         path = os.path.join(res_file_folder, filename)
@@ -386,4 +393,104 @@ class deepv(IMDB):
             info_str += 'AP for {} = {:.4f}\n'.format(cls, ap)
         print('Mean AP@0.7 = {:.4f}'.format(np.mean(aps)))
         info_str += 'Mean AP@0.7 = {:.4f}'.format(np.mean(aps))
+        return info_str
+
+    def save_roc_graph(self, recall=None, prec=None, ap=None, class_name='class', path=None):
+        if not os.path.exists(path):
+            os.mkdir(path)
+        plot_path = os.path.join(path, '{}.png'.format(class_name))
+        if os.path.exists(plot_path):
+            os.remove(plot_path)
+        fig = plt.figure()
+        plt.title(class_name)
+        plt.plot(recall, prec, 'b', label='AP = %0.2f' % ap)
+        plt.legend(loc='lower right')
+        plt.xlim([0, 1])
+        plt.ylim([0, 1])
+        plt.ylabel('Precision')
+        plt.xlabel('Recall')
+        plt.savefig(plot_path)
+        plt.close(fig)
+
+    def evaluate_rpn_detections(self, detections):
+        """
+        top level evaluations
+        :param detections: result matrix, [bbox, confidence]
+        :return: None
+        """
+        # make all these folders for results
+        result_dir = os.path.join(self.dataset_path, 'results')
+        if not os.path.exists(result_dir):
+            os.mkdir(result_dir)
+        res_file_folder = os.path.join(self.result_path, 'results', 'deepv')
+        if not os.path.exists(res_file_folder):
+            os.mkdir(res_file_folder)
+
+        self.write_rpn_results(detections)
+        info = self.do_rpn_eval()
+        return info
+
+    def write_rpn_results(self, all_boxes):
+        """
+        write results files in pascal devkit path
+        :param all_boxes: boxes to be processed [bbox, confidence]
+        :return: None
+        """
+        rpn_classes = ['__background__', 'object']
+        for cls_ind, cls in enumerate(rpn_classes):
+            if cls == '__background__':
+                continue
+            print('Writing {} VOC results file'.format(cls))
+            filename = self.get_result_file_template().format(cls)
+            with open(filename, 'wt') as f:
+                for im_ind, index in enumerate(self.image_set_index):
+                    dets = all_boxes[im_ind]
+                    if len(dets) == 0:
+                        continue
+                    # the VOCdevkit expects 1-based indices
+                    for k in range(dets.shape[0]):
+                        f.write('{:s} {:.3f} {:.1f} {:.1f} {:.1f} {:.1f}\n'.
+                                format(index, dets[k, -1],
+                                       dets[k, 0] + 1, dets[k, 1] + 1, dets[k, 2] + 1, dets[k, 3] + 1))
+
+    def do_rpn_eval(self):
+        """
+        python evaluation wrapper
+        :return: info_str
+        """
+        info_str = ''
+        annopath = os.path.join(self.data_path, 'Annotations', '{0!s}.xml')
+        imageset_file = os.path.join(self.data_path, 'ImageSets', 'Main', self.image_set + '.txt')
+        annocache = os.path.join(self.cache_path, self.name + '_annotations.pkl')
+        aps = []
+        # The PASCAL VOC metric changed in 2010
+        use_07_metric = True
+        print('VOC07 metric? ' + ('Y' if use_07_metric else 'No'))
+        info_str += 'VOC07 metric? ' + ('Y' if use_07_metric else 'No')
+        rpn_classes = ['__background__', 'object']
+        for cls_ind, cls in enumerate(rpn_classes):
+            if cls == '__background__':
+                continue
+            filename = self.get_result_file_template().format(cls)
+            rec, prec, ap = voc_eval(filename, annopath, imageset_file, cls, annocache,
+                                     ovthresh=0.5, use_07_metric=use_07_metric)
+            self.save_roc_graph(rec, prec, ap, 'object', path=os.path.join(self.result_path, 'results', 'deepv', 'Main', 'roc'))
+            aps += [ap]
+            print('AP for {} = {:.4f}'.format(cls, ap))
+            info_str += 'AP for {} = {:.4f}\n'.format(cls, ap)
+        print('Mean AP@0.5 = {:.4f}'.format(np.mean(aps)))
+        info_str += 'Mean AP@0.5 = {:.4f}\n\n'.format(np.mean(aps))
+        # @0.7
+        # aps = []
+        # for cls_ind, cls in enumerate(rpn_classes):
+        #     if cls == '__background__':
+        #         continue
+        #     filename = self.get_result_file_template().format(cls)
+        #     rec, prec, ap = voc_eval(filename, annopath, imageset_file, cls, annocache,
+        #                              ovthresh=0.7, use_07_metric=use_07_metric)
+        #     aps += [ap]
+        #     print('AP for {} = {:.4f}'.format(cls, ap))
+        #     info_str += 'AP for {} = {:.4f}\n'.format(cls, ap)
+        # print('Mean AP@0.7 = {:.4f}'.format(np.mean(aps)))
+        # info_str += 'Mean AP@0.7 = {:.4f}'.format(np.mean(aps))
         return info_str

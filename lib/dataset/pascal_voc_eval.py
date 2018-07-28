@@ -26,7 +26,10 @@ def parse_voc_rec(filename):
     for obj in tree.findall('object'):
         obj_dict = dict()
         obj_dict['name'] = obj.find('name').text
-        obj_dict['difficult'] = int(obj.find('difficult').text)
+        if obj.find('difficult') is None:
+            obj_dict['difficult'] = 0
+        else:
+            obj_dict['difficult'] = int(obj.find('difficult').text)
         bbox = obj.find('bndbox')
         obj_dict['bbox'] = [int(float(bbox.find('xmin').text)),
                             int(float(bbox.find('ymin').text)),
@@ -104,11 +107,15 @@ def voc_eval(detpath, annopath, imageset_file, classname, annocache, ovthresh=0.
     class_recs = {}
     npos = 0
     for image_filename in image_filenames:
-        objects = [obj for obj in recs[image_filename] if obj['name'] == classname]
+        if classname == 'object':
+            # use all classes for evaluate rpn
+            objects = [obj for obj in recs[image_filename]]
+        else:
+            objects = [obj for obj in recs[image_filename] if obj['name'] == classname]
         bbox = np.array([x['bbox'] for x in objects])
         difficult = np.array([x['difficult'] for x in objects]).astype(np.bool)
         det = [False] * len(objects)  # stand for detected
-        npos = npos + sum(~difficult)
+        npos += len(objects)
         class_recs[image_filename] = {'bbox': bbox,
                                       'difficult': difficult,
                                       'det': det}

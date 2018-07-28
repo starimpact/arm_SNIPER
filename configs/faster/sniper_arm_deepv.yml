@@ -13,7 +13,7 @@ default:
   kvstore: device
 network:
   pretrained: "output/sniper_arm_deepv/sniper_arm_deepv/train/SNIPER"
-  pretrained_epoch: 7
+  pretrained_epoch: 11
   PIXEL_MEANS:
   - 103.939
   - 116.779
@@ -42,7 +42,8 @@ dataset:
   dataset_path: "./data/deepv_all"
   image_set: train
   root_path: "./data"
-  test_image_set: test
+  test_dataset_path: "./data/deepv_all" # "./data/nanchang1000"
+  test_image_set: train
   proposal: rpn
 TRAIN:
   ## CHIP GENERATION PARAMS
@@ -88,7 +89,7 @@ TRAIN:
   wd: 0.0001
   scale: 1.0
   warmup_step: 1000 #4000 #1000
-  begin_epoch: 8
+  begin_epoch: 12
   end_epoch: 700
 
   # whether flip image
@@ -104,7 +105,7 @@ TRAIN:
   # R-CNN
   # rcnn rois batch size
   BATCH_ROIS: -1
-  BATCH_ROIS_OHEM: 256
+  B0ATCH_ROIS_OHEM: 256
   # rcnn rois sampling params
   FG_FRACTION: 0.25
   FG_THRESH: 0.5
@@ -120,7 +121,7 @@ TRAIN:
 
   # RPN anchor loader
   # rpn anchors batch size
-  RPN_BATCH_SIZE: 256
+  RPN_BATCH_SIZE: 1000
   # rpn anchors sampling params
   RPN_FG_FRACTION: 0.5
   RPN_POSITIVE_OVERLAP: 0.5
@@ -160,18 +161,18 @@ TEST:
   # Whether to do multi-scale inference
   SCALES:
   - !!python/tuple [216, 384]
-  - !!python/tuple [135, 240]
+#  - !!python/tuple [135, 240]
 #  - !!python/tuple [270, 480]
 
   # Number of images per gpu for each scale
   BATCH_IMAGES:
-  - 2
-  - 4
+  - 64
+#  - 64
 
   # Number of concurrent jobs used for inference
   # if greater than 1, the roidb is distributed over
   # concurrent jobs to increase throughput
-  CONCURRENT_JOBS: 2
+  CONCURRENT_JOBS: 1
 
   # Ranges to specify valid proposal length
   # in each of the test scale, square area
@@ -180,7 +181,7 @@ TEST:
   # -1 everywhere if you want to have all proposals
   VALID_RANGES:
   - !!python/tuple [-1, -1]
-  - !!python/tuple [-1, -1]
+#  - !!python/tuple [-1, -1]
 
   # Use rpn to generate proposal
   HAS_RPN: true
@@ -201,7 +202,7 @@ TEST:
   NMS_SIGMA: 0.55
 
   # Which epoch of the training be used for testing
-  TEST_EPOCH: 7
+  TEST_EPOCH: 10
 
   # VISUALIZATION CONFIG
   VISUALIZATION_PATH: './debug/visualization'
@@ -213,7 +214,7 @@ TEST:
 
   # PROPOSAL EXTRACTION FLAGS
   # If true only would extract proposals
-  EXTRACT_PROPOSALS: false
+  EXTRACT_PROPOSALS: true
 
   # The folder path to be used for saving proposals
   PROPOSAL_SAVE_PATH: 'output/proposals'

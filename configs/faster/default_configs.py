@@ -35,6 +35,7 @@ config.network.NUM_ANCHORS = len(config.network.ANCHOR_SCALES) * len(config.netw
 config.dataset = edict()
 config.dataset.dataset = 'PascalVOC'
 config.dataset.image_set = '2007_trainval'
+config.dataset.test_dataset_path = 'PascalVOC'
 config.dataset.test_image_set = '2007_test'
 config.dataset.root_path = './data'
 config.dataset.dataset_path = './data/VOCdevkit'
@@ -43,7 +44,7 @@ config.dataset.NUM_CLASSES = 21
 
 config.TRAIN = edict()
 config.TRAIN.CPP_CHIPS = False
-config.TRAIN.USE_NEG_CHIPS = False
+config.TRAIN.USE_NEG_CHIPS = True
 config.TRAIN.CHIPS_DB_PARTS = 20
 config.TRAIN.WITH_MASK = False
 config.TRAIN.lr = 0
